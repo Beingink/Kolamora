@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#F5C055">
+<meta name="description" content="Kolamora: learn the pulli kolam and use one as your key.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kolamora">
+<script>window.__STANDALONE__ = true;</script>
+<title>Kolamora</title>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+<style>
+  :root { --peach:#FFD4A2; --dark:#321B00; --brown:#854E0E; --cream:#FFFAF0; --ink:#4a2c06; --night:#1a0f03; --red:#ff7a5c; color-scheme:light; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html, body { height:100%; background:var(--night); font-family:Jost, system-ui, sans-serif; }
+  body { display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  #phone { position:relative; width:390px; height:844px; max-height:calc(100% - 40px);
+    border-radius:46px; overflow:hidden; touch-action:none; user-select:none; -webkit-user-select:none;
+    box-shadow:0 0 0 10px #0b0602, 0 0 0 11px #3a2a18, 0 30px 80px rgba(0,0,0,.6); }
+  @media (max-width:500px), (display-mode:standalone) { #phone { width:100%; height:100%; max-height:none; border-radius:0; box-shadow:none; } #status { display:none !important; } #top { top:calc(28px + env(safe-area-inset-top,0px)) !important; } }
+  #stats { margin-top:10px; font-size:13px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink); opacity:.75; font-variant-numeric:tabular-nums; }
+  #sheet { position:absolute; inset:0; z-index:5; background:rgba(26,15,3,.55); display:flex; align-items:flex-end; }
+  #sheet[hidden] { display:none; }
+  #sheet .card { width:100%; background:var(--cream); color:var(--dark); border-radius:26px 26px 0 0; padding:26px 26px calc(26px + env(safe-area-inset-bottom,0px)); text-align:left; }
+  #sheet h2 { font-weight:500; font-size:22px; margin-bottom:12px; }
+  #sheet p { font-size:15px; line-height:1.5; margin-bottom:10px; color:var(--ink); }
+  #sheet b { color:var(--dark); }
+  #sheet button { margin-top:8px; width:100%; }
+  button:focus-visible { outline:2px solid var(--cream); outline-offset:2px; }
+  @media (prefers-reduced-motion:reduce) { .shake { animation:none; } }
+  #phone canvas { position:absolute; inset:0; display:block; z-index:0; }
+  .ui { position:absolute; left:0; right:0; z-index:2; pointer-events:none; text-align:center; padding:0 26px; }
+  #status { top:14px; display:flex; justify-content:space-between; font-size:14px; font-weight:500; padding:0 32px; color:var(--dark); }
+  #top { top:58px; }
+  #brand { letter-spacing:.55em; font-size:12px; font-weight:600; color:var(--dark); opacity:.7; margin-left:.55em; }
+  #title { text-wrap:balance; font-weight:500; font-size:25px; color:var(--dark); margin-top:12px; line-height:1.15; }
+  #sub { font-size:15px; line-height:1.45; color:#4a2c06; margin-top:8px; }
+  #clock { font-size:78px; font-weight:400; color:var(--dark); line-height:1; margin-top:6px; letter-spacing:-1px; }
+  #date { font-size:16px; color:#4a2c06; margin-top:4px; }
+  #bottom { bottom:26px; }
+  #msg { min-height:22px; text-wrap:balance; font-size:15px; line-height:1.35; color:var(--peach); margin-bottom:14px; transition:opacity .3s; }
+  #btns { display:flex; flex-direction:column; gap:10px; align-items:center; }
+  #btns .row { display:flex; gap:8px; justify-content:center; pointer-events:auto; }
+  button { white-space:nowrap; font:inherit; font-size:12px; font-weight:500; letter-spacing:.14em; text-transform:uppercase; border:none;
+    border-radius:999px; padding:11px 14px; background:var(--peach); color:var(--dark); cursor:pointer; transition:background .2s, color .2s; }
+  button:hover { background:var(--dark); color:#fff; }
+  button.soft { background:rgba(50,27,0,.45); color:var(--peach); }
+  button.soft:hover { background:var(--dark); color:#fff; }
+  button.on { background:var(--dark); color:#fff; }
+  .shake { animation:shake .45s; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-10px)} 40%{transform:translateX(9px)} 60%{transform:translateX(-6px)} 80%{transform:translateX(4px)} }
+</style>
+</head>
+<body>
+<div id="phone">
+  <div class="ui" id="status"><span id="sbTime">9:41</span><span>Kolamora</span></div>
+  <div class="ui" id="top">
+    <div id="brand">KOLAMORA</div>
+    <div id="clock"></div>
+    <div id="date"></div>
+    <div id="title"></div>
+    <div id="sub"></div>
+  </div>
+  <div class="ui" id="bottom">
+    <div id="msg"></div>
+    <div id="btns"></div>
+  </div>
+  <div id="sheet" hidden><div class="card">
+    <h2>Keep Kolamora on your home screen</h2>
+    <p><b>iPhone:</b> open this page in Safari, tap the Share button, then <b>Add to Home Screen</b>.</p>
+    <p><b>Android:</b> open it in Chrome, tap the <b>⋮</b> menu, then <b>Add to Home screen</b> or <b>Install app</b>.</p>
+    <p>Your kolam stays on this phone only. It is never uploaded.</p>
+    <button id="sheetClose">Done</button>
+  </div></div>
+</div>
+
+<script>
+/* =========================================================
+   KOLAMORA LOCK — a pulli (sikku) kolam as your passcode
+   Geometry: dots sit at odd-odd lattice points. The kolam line
+   runs diagonally through "gates" (odd-sum points): midpoints
+   between neighbouring dots and along the border. At each inner
+   gate the line either crosses itself (the sikku) or bounces.
+   A drawn stroke is read as the sequence of gates it passes.
+   ========================================================= */
+
+// ---------- geometry ----------
+function makeGrid(cols, rows) { return { cols, rows, W: 2 * cols, H: 2 * rows, mirrors: {} }; }
+const key = (x, y) => x + ',' + y;
+const parseKey = k => k.split(',').map(Number);
+function isVertex(g, x, y) { return ((x + y) & 1) === 1 && x >= 0 && y >= 0 && x <= g.W && y <= g.H; }
+function vertices(g) { const o = []; for (let x = 0; x <= g.W; x++) for (let y = 0; y <= g.H; y++) if ((x + y) & 1) o.push([x, y]); return o; }
+function dotsOf(g) { const o = []; for (let i = 0; i < g.cols; i++) for (let j = 0; j < g.rows; j++) o.push([2 * i + 1, 2 * j + 1]); return o; }
+function gates(g) { return vertices(g).filter(([x, y]) => x > 0 && y > 0 && x < g.W && y < g.H); }
+
+function reflect(g, x, y, dx, dy) {
+  if (x === 0 || x === g.W) dx = -dx;          // border bounces
+  if (y === 0 || y === g.H) dy = -dy;
+  const m = g.mirrors[key(x, y)] || 0;           // 0 = cross (sikku), 1/2 = bounce
+  if (m === 1) dy = -dy; else if (m === 2) dx = -dx;
+  return [dx, dy];
+}
+const DIRS = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
+function traceLoops(g) {
+  const seen = new Set(), loops = [];
+  const ek = (a, b, c, d) => (a < c || (a === c && b < d)) ? `${a},${b},${c},${d}` : `${c},${d},${a},${b}`;
+  for (const [x, y] of vertices(g)) for (const [dx, dy] of DIRS) {
+    const nx = x + dx, ny = y + dy;
+    if (!isVertex(g, nx, ny) || seen.has(ek(x, y, nx, ny))) continue;
+    const loop = []; let cx = x, cy = y, ddx = dx, ddy = dy, guard = 0;
+    do {
+      loop.push([cx, cy]);
+      const ux = cx + ddx, uy = cy + ddy;
+      seen.add(ek(cx, cy, ux, uy));
+      [ddx, ddy] = reflect(g, ux, uy, ddx, ddy);
+      cx = ux; cy = uy;
+    } while (!(cx === x && cy === y && ddx === dx && ddy === dy) && ++guard < 20000);
+    loops.push(loop);
+  }
+  return loops;
+}
+function samplePath(loop, steps) {
+  const n = loop.length, pts = [];
+  for (let i = 0; i < n; i++) {
+    const a = loop[(i - 1 + n) % n], b = loop[i], c = loop[(i + 1) % n];
+    const m0 = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], m1 = [(b[0] + c[0]) / 2, (b[1] + c[1]) / 2];
+    for (let s = 0; s < steps; s++) {
+      const t = s / steps, u = 1 - t;
+      pts.push([u * u * m0[0] + 2 * u * t * b[0] + t * t * m1[0], u * u * m0[1] + 2 * u * t * b[1] + t * t * m1[1]]);
+    }
+  }
+  return pts;
+}
+function kolamFromLoop(g, loop) { return { g, loop, cycle: loop.map(p => key(p[0], p[1])), samples: samplePath(loop, 12) }; }
+
+function randomKolam(n) {
+  for (let t = 0; t < 8000; t++) {
+    const g = makeGrid(n, n); let cr = 0;
+    for (const [x, y] of gates(g)) { const r = Math.random(); const m = r < 0.55 ? 0 : (r < 0.775 ? 1 : 2); g.mirrors[key(x, y)] = m; if (!m) cr++; }
+    const Ls = traceLoops(g);
+    if (Ls.length === 1 && cr >= n) return kolamFromLoop(g, Ls[0]);
+  }
+}
+function bestKolam(cols, rows) {               // single line, most crossings
+  const gs = gates(makeGrid(cols, rows)); let best = null, bestC = -1;
+  for (let c = 0; c < 3 ** gs.length; c++) {
+    const g = makeGrid(cols, rows); let x = c, cr = 0;
+    gs.forEach(([a, b]) => { const m = x % 3; x = Math.floor(x / 3); g.mirrors[key(a, b)] = m; if (!m) cr++; });
+    const Ls = traceLoops(g);
+    if (Ls.length === 1 && cr > bestC) { best = { g, loop: Ls[0] }; bestC = cr; }
+  }
+  return kolamFromLoop(best.g, best.loop);
+}
+
+// ---------- reading a stroke ----------
+const MIN_VISIT = 0.3, TOUCH_R = 0.24;
+function cleanTokens(segs) {
+  let keep = segs.filter(s => s.len >= MIN_VISIT);
+  if (!keep.length) keep = segs.slice(0, 1);
+  const tok = [];
+  for (const s of keep) if (!tok.length || tok[tok.length - 1] !== s.v) tok.push(s.v);
+  return tok;
+}
+function aligns(tok, cyc) {
+  const n = cyc.length, res = [], rev = [...cyc].reverse();
+  for (const d of [cyc, rev]) for (let k = 0; k < n; k++) {
+    let ok = true;
+    for (let i = 0; i < tok.length; i++) if (d[(k + i) % n] !== tok[i]) { ok = false; break; }
+    if (ok) res.push({ d, k });
+  }
+  return res;
+}
+const cyclicMatch = (tok, cyc) => tok.length === cyc.length && aligns(tok, cyc).length > 0;
+
+function analyze(tr) {
+  const segs = tr.segs.map(s => ({ ...s }));
+  const a = tr.gpts[0], b = tr.gpts[tr.gpts.length - 1];
+  let closed = Math.hypot(a[0] - b[0], a[1] - b[1]) < 0.6;
+  if (segs.length > 1 && segs[0].v === segs[segs.length - 1].v) { segs[0].len += segs.pop().len; closed = true; }
+  let tok = cleanTokens(segs);
+  if (tok.length > 2 && tok[0] === tok[tok.length - 1]) { tok.pop(); closed = true; }
+  else for (let o = 2; o <= 4; o++) {               // forgive a small overshoot past the start
+    const m = tok.length;
+    if (m > o + 2 && tok.slice(0, o).join('|') === tok.slice(m - o).join('|')) { tok = tok.slice(0, m - o); closed = true; break; }
+  }
+  return { tok, closed, touched: tr.touched };
+}
+function adjacentOK(tok) {
+  for (let i = 0; i < tok.length; i++) {
+    const [x1, y1] = parseKey(tok[i]), [x2, y2] = parseKey(tok[(i + 1) % tok.length]);
+    if (Math.abs(x1 - x2) !== 1 || Math.abs(y1 - y2) !== 1) return false;
+  }
+  return true;
+}
+function embracesAll(g, tok) {
+  const s = new Set(tok);
+  return dotsOf(g).every(([x, y]) => [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]].filter(([p, q]) => s.has(key(p, q))).length >= 3);
+}
+
+// ---------- storage (this phone only) ----------
+const STORE = 'kolamora.v1';
+function loadStore() { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { return {}; } }
+function saveStore(d) { try { localStorage.setItem(STORE, JSON.stringify(d)); } catch (e) {} }
+let store = loadStore();
+function savePasscode(k) { store.key = { cols: k.g.cols, rows: k.g.rows, loop: k.loop }; saveStore(store); }
+function loadPasscode() { const k = store.key; if (!k || !k.loop) return null; try { return kolamFromLoop(makeGrid(k.cols, k.rows), k.loop); } catch (e) { return null; } }
+function recordUnlock() { const d = new Date(), day = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+  store.days = store.days || []; if (!store.days.includes(day)) store.days.push(day); store.unlocks = (store.unlocks || 0) + 1; saveStore(store); }
+function buzz(p) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} }
+
+// ---------- state ----------
+let mode = 'welcome', target = null, gridG = null, interactive = false;
+let opts = { ghost: false, lamp: false, guide: false, clean: false };
+let trace = null, result = null, revealStart = 0, peekUntil = 0, hintFrac = 0;
+let passcode = null, candidate = null, pendingOwn = null;
+let lessonIdx = 0, rep = 0, fails = 0, createSize = 3, feedOn = false;
+let ants = [], lessonKolams = null, vertCache = null, dotCache = null;
+const $ = s => document.querySelector(s);
+
+const LESSONS = [
+  { title: 'Go around the dot.', sub: 'This dot is a <b>pulli</b>. The line goes around it, never through it. Trace the loop in one stroke.',
+    done: 'Amma would approve.', make: () => bestKolam(1, 1) },
+  { title: 'Tie the knot.', sub: 'Where two lines meet between pullis, they cross. That crossing is the <b>sikku</b>. Trace the figure‑eight.',
+    done: 'Your first sikku.', make: () => bestKolam(2, 1) },
+  { title: 'Don’t lift your finger.', sub: 'Four pullis, one line. Start anywhere, go round every dot, and come home.',
+    done: 'One line, no loose ends. That’s a kolam.', make: () => bestKolam(2, 2) },
+];
+
+// ---------- UI ----------
+function ui(o) {
+  $('#brand').style.display = o.brand === false ? 'none' : '';
+  $('#brand').textContent = o.eyebrow || 'KOLAMORA';
+  $('#clock').style.display = o.clock ? '' : 'none';
+  $('#date').style.display = o.clock ? '' : 'none';
+  $('#title').innerHTML = o.title || '';
+  $('#sub').innerHTML = o.sub || '';
+  setMsg(o.msg || '');
+  const b = $('#btns'); b.innerHTML = '';
+  (o.buttons || []).forEach(row => {
+    const r = document.createElement('div'); r.className = 'row';
+    row.forEach(btn => {
+      const el = document.createElement('button');
+      el.textContent = btn.label; if (btn.cls) el.className = btn.cls;
+      el.onclick = btn.fn; r.appendChild(el);
+    });
+    b.appendChild(r);
+  });
+}
+function setMsg(t) { $('#msg').innerHTML = t; }
+function shake() { const p = $('#phone'); p.classList.remove('shake'); void p.offsetWidth; p.classList.add('shake'); }
+function pips(i, n) { return Array.from({ length: n }, (_, k) => k < i ? '●' : '○').join(' '); }
+function setGrid(g) { gridG = g; vertCache = g ? vertices(g).map(([x, y]) => ({ x, y, k: key(x, y) })) : null; dotCache = g ? dotsOf(g) : null; }
+function setTarget(k) { target = k; setGrid(k ? k.g : null); }
+
+function goto(m, arg) {
+  mode = m; trace = null; result = null; peekUntil = 0; hintFrac = 0;
+  opts = { ghost: false, lamp: false, guide: false, clean: false };
+  if (m !== 'home') feedOn = false;
+
+  if (m === 'welcome') {
+    setTarget(randomKolam(3)); opts.ghost = true; opts.lamp = true; interactive = false;
+    ui({ title: 'Face ID protects your phone.', sub: 'Kolams protected the whole house. Learn the pulli kolam, then make one your key.',
+      buttons: [[{ label: 'Learn the kolam', fn: () => goto('lesson', 0) }], [{ label: 'Skip to my kolam', cls: 'soft', fn: () => goto('create') }]] });
+  }
+
+  if (m === 'lesson') {
+    lessonIdx = arg; const L = LESSONS[arg];
+    if (!lessonKolams) lessonKolams = LESSONS.map(l => l.make());
+    setTarget(lessonKolams[arg]); opts.ghost = opts.lamp = opts.guide = true; interactive = true;
+    ui({ eyebrow: `LESSON ${arg + 1} OF 3`, title: L.title, sub: L.sub, msg: 'Follow the glow. Lift your finger when you’re back where you began.',
+      buttons: [[{ label: 'Skip lessons', cls: 'soft', fn: () => goto('create') }]] });
+  }
+
+  if (m === 'create') {
+    setTarget(randomKolam(createSize)); candidate = target; opts.clean = true; interactive = false; revealStart = millis();
+    const size = n => ({ label: `${n}×${n}`, cls: createSize === n ? 'on' : 'soft', fn: () => { createSize = n; goto('create'); } });
+    ui({ title: 'Pick a kolam.', sub: 'This becomes your key. You’ll learn it in a minute.',
+      buttons: [[size(3), size(4), { label: '↻ Another', cls: 'soft', fn: () => goto('create') }],
+                [{ label: 'Draw my own', cls: 'soft', fn: () => goto('own') }, { label: 'Use this →', fn: () => goto('practice') }]] });
+  }
+
+  if (m === 'practice') { setTarget(candidate); rep = 0; interactive = true; setPractice(); }
+
+  if (m === 'own') {
+    setTarget(null); setGrid(makeGrid(createSize, createSize)); interactive = true;
+    ui({ title: 'Draw your own.', sub: 'Like the notebook ones. One line around every pulli, no touching the dots, finish where you started.',
+      buttons: [[{ label: '← Back', cls: 'soft', fn: () => goto('create') }]] });
+  }
+
+  if (m === 'ownConfirm') {
+    setTarget(pendingOwn); interactive = true;
+    ui({ title: 'Once more', sub: 'Draw the same kolam again, from memory, to confirm.',
+      buttons: [[{ label: 'Start over', cls: 'soft', fn: () => goto('own') }]] });
+  }
+
+  if (m === 'lock') {
+    setTarget(passcode); interactive = true; fails = 0; ensureAnts();
+    ui({ brand: false, clock: true, msg: arg || 'Draw your kolam' });
+    tick();
+  }
+
+  if (m === 'home') {
+    setTarget(passcode); interactive = false; opts.clean = true;
+    const days = (store.days || []).length, un = store.unlocks || 0;
+    ui({ title: 'You’re in.', sub: 'Kolams were made of rice flour, to feed the ants.<br>Yours is feeding <b id="fc">0</b>.',
+      buttons: [[{ label: 'Lock', fn: () => goto('lock') }, { label: 'Practice', cls: 'soft', fn: () => { candidate = passcode; goto('practice'); } }],
+                [{ label: 'New kolam', cls: 'soft', fn: () => goto('create') }, { label: 'Lessons', cls: 'soft', fn: () => goto('lesson', 0) }, { label: 'Install', cls: 'soft', fn: () => { $('#sheet').hidden = false; } }]] });
+    $('#sub').insertAdjacentHTML('afterend', '');
+    $('#sub').innerHTML += `<div id="stats">${days} ${days === 1 ? 'morning' : 'mornings'} drawn · ${un} ${un === 1 ? 'unlock' : 'unlocks'}</div>`;
+  }
+}
+
+function setPractice() {
+  trace = null; result = null;
+  opts.ghost = opts.guide = rep < 2; opts.lamp = rep === 0;
+  const subs = ['Trace it with the glow.', 'Again. The lane stays, the glow goes.', 'Now from memory. Just dots. You’ve got this.'];
+  ui({ eyebrow: `PRACTICE  ${pips(rep, 3)}`, title: 'Learn it by heart.', sub: subs[rep],
+    buttons: [[{ label: '← Pick another', cls: 'soft', fn: () => goto('create') }]] });
+}
+
+// ---------- ants (from the original sketch) ----------
+class Ant {
+  constructor() { this.x = Math.random() * width; this.y = Math.random() * height; this.a = Math.random() * TAU; this.base = 0.5 + Math.random() * 0.9; this.v = this.base; this.ti = null; }
+  update(fp) {
+    if (feedOn && fp && this.ti != null) {
+      const [tx, ty] = fp[this.ti % fp.length], dx = tx - this.x, dy = ty - this.y, d = Math.hypot(dx, dy);
+      if (d > 4) { const w = Math.atan2(dy, dx); this.a += Math.atan2(Math.sin(w - this.a), Math.cos(w - this.a)) * 0.15; this.v = Math.min(2.4, this.v + 0.06); this.eating = false; }
+      else { this.a += (Math.random() - 0.5) * 1.2; this.v = 0.12; this.eating = true; }
+    } else { this.a += (Math.random() - 0.5) * 0.35; this.v += (this.base - this.v) * 0.03; this.eating = false; }
+    this.x += Math.cos(this.a) * this.v; this.y += Math.sin(this.a) * this.v;
+    if (this.x < 0 || this.x > width) { this.a = Math.PI - this.a; this.x = constrain(this.x, 0, width); }
+    if (this.y < 0 || this.y > height) { this.a = -this.a; this.y = constrain(this.y, 0, height); }
+  }
+  draw() {
+    push(); translate(this.x, this.y); rotate(this.a); noStroke(); fill(28, 12, 0);
+    ellipse(-2.6, 0, 3.8, 2.7); ellipse(0, 0, 2.2, 1.7); ellipse(2.3, 0, 2.5, 2.3); pop();
+  }
+}
+function ensureAnts() { if (!ants.length) for (let i = 0; i < 90; i++) ants.push(new Ant()); }
+function scatterAnts() { ants.forEach(a => { a.a = Math.atan2(a.y - height * 0.55, a.x - width / 2) + (Math.random() - 0.5); a.v = 4; }); }
+
+// ---------- layout ----------
+function layoutFor(g) {
+  const rot = g.cols === g.rows && g.cols > 1;
+  const region = Math.min(width - 48, height * 0.42);
+  let u = rot ? region / ((g.W + g.H) / Math.SQRT2 + 0.4) : Math.min(region / (g.W + 0.4), region / (g.H + 0.4));
+  u = Math.min(u, 80);
+  return { u, rot: rot ? Math.PI / 4 : 0, cx: width / 2, cy: height * 0.545 };
+}
+function G2S(L, g, x, y) {
+  const lx = (x - g.W / 2) * L.u, ly = (y - g.H / 2) * L.u, c = Math.cos(L.rot), s = Math.sin(L.rot);
+  return [L.cx + lx * c - ly * s, L.cy + lx * s + ly * c];
+}
+function S2G(L, g, px, py) {
+  const dx = px - L.cx, dy = py - L.cy, c = Math.cos(-L.rot), s = Math.sin(-L.rot);
+  return [(dx * c - dy * s) / L.u + g.W / 2, (dx * s + dy * c) / L.u + g.H / 2];
+}
+
+// ---------- input ----------
+function startTrace(sx, sy) { result = null; trace = { pts: [], gpts: [], segs: [], touched: null, off: false, offPt: null, total: 0, tok: [], al: [], active: true }; addPoint(sx, sy); }
+function nearestVertex(x, y) { let best = null, bd = 1e9; for (const v of vertCache) { const d = (v.x - x) ** 2 + (v.y - y) ** 2; if (d < bd) { bd = d; best = v.k; } } return best; }
+function addPoint(sx, sy) {
+  const L = layoutFor(gridG), [gx, gy] = S2G(L, gridG, sx, sy), prev = trace.gpts[trace.gpts.length - 1];
+  const dist = prev ? Math.hypot(gx - prev[0], gy - prev[1]) : 0, steps = prev ? Math.max(1, Math.ceil(dist / 0.08)) : 1;
+  for (let s = 1; s <= steps; s++) {
+    const t = s / steps, x = prev ? prev[0] + (gx - prev[0]) * t : gx, y = prev ? prev[1] + (gy - prev[1]) * t : gy, sl = dist / steps;
+    for (const [dx, dy] of dotCache) if (Math.hypot(x - dx, y - dy) < TOUCH_R && !trace.touched) trace.touched = key(dx, dy);
+    const v = nearestVertex(x, y), last = trace.segs[trace.segs.length - 1];
+    if (last && last.v === v) last.len += sl; else trace.segs.push({ v, len: sl });
+  }
+  trace.total += dist; trace.gpts.push([gx, gy]); trace.pts.push([sx, sy]);
+  if (target && opts.guide) {
+    trace.tok = cleanTokens(trace.segs); trace.al = aligns(trace.tok, target.cycle);
+    if (trace.tok.length && !trace.al.length && !trace.off) { trace.off = true; trace.offPt = [sx, sy]; }
+  }
+}
+function endTrace() {
+  if (!trace) return; trace.active = false;
+  if (trace.total < 0.8) { trace = null; return; }   // a tap, not a stroke
+  const r = analyze(trace);
+  if (mode === 'lesson' || mode === 'practice') teachResult(r);
+  else if (mode === 'own') ownResult(r);
+  else if (mode === 'ownConfirm') confirmResult(r);
+  else if (mode === 'lock') lockResult(r);
+}
+function fail(msg) { result = { ok: false, t0: millis() }; setMsg(msg); if (mode !== 'lock') buzz(25); }
+function succeed(msg) { result = { ok: true, t0: millis() }; revealStart = millis(); setMsg(msg); if (mode !== 'lock') buzz(12); }
+
+function teachResult(r) {
+  if (r.touched) return fail('Your line touched a pulli. The line embraces the dots — it never runs over them.');
+  if (!r.closed) return fail('There’s a loose end. A kolam always comes back to where it began.');
+  if (!cyclicMatch(r.tok, target.cycle)) {
+    if (mode === 'practice' && rep === 2) { peekUntil = millis() + 2400; return fail('Not quite — here’s a quick peek. Try again.'); }
+    return fail('That took a different turn. Stay inside the glowing lane.');
+  }
+  interactive = false;
+  if (mode === 'lesson') {
+    succeed(LESSONS[lessonIdx].done);
+    const last = lessonIdx === LESSONS.length - 1;
+    setTimeout(() => ui({ eyebrow: `LESSON ${lessonIdx + 1} OF 3`, title: LESSONS[lessonIdx].title, sub: LESSONS[lessonIdx].sub, msg: LESSONS[lessonIdx].done,
+      buttons: [[last ? { label: 'Make my kolam →', fn: () => goto('create') } : { label: 'Next lesson →', fn: () => goto('lesson', lessonIdx + 1) }],
+                [{ label: 'Again', cls: 'soft', fn: () => goto('lesson', lessonIdx) }]] }), 700);
+  } else {
+    rep++;
+    if (rep >= 3) { succeed('Learned by heart.'); passcode = candidate; savePasscode(passcode); setTimeout(() => goto('lock', 'Your kolam is set. Draw it to unlock.'), 1400); }
+    else { succeed(['Good. Once more.', 'Lovely. Now without the lane.'][rep - 1]); setTimeout(() => { interactive = true; setPractice(); }, 1100); }
+  }
+}
+function ownResult(r) {
+  if (r.touched) return fail('The line touched a pulli. Go around the dots, not over them.');
+  if (!r.closed) return fail('There’s a loose end — finish where you started.');
+  if (r.tok.length < 4 || !adjacentOK(r.tok)) return fail('I couldn’t read that line. Draw a little slower and smoother.');
+  if (!embracesAll(gridG, r.tok)) return fail('Every pulli needs to be embraced by the line. Weave between them, not just around the outside.');
+  pendingOwn = kolamFromLoop(gridG, r.tok.map(parseKey)); target = pendingOwn; interactive = false;
+  succeed('That’s a kolam.'); setTimeout(() => goto('ownConfirm'), 1300);
+}
+function confirmResult(r) {
+  if (!r.touched && r.closed && cyclicMatch(r.tok, pendingOwn.cycle)) {
+    interactive = false; succeed('Matched. Your kolam is set.'); passcode = pendingOwn; savePasscode(passcode);
+    setTimeout(() => goto('lock', 'Draw your kolam to unlock'), 1300);
+  } else { fail('That didn’t match. Starting over…'); shake(); interactive = false; setTimeout(() => goto('own'), 1600); }
+}
+function lockResult(r) {
+  if (!r.touched && r.closed && cyclicMatch(r.tok, passcode.cycle)) {
+    interactive = false; succeed('Welcome in'); feedOn = true; recordUnlock(); buzz(15);
+    ants.forEach(a => a.ti = Math.floor(Math.random() * passcode.samples.length));
+    setTimeout(() => goto('home'), 1600);
+  } else {
+    fails++; shake(); scatterAnts(); buzz([30, 40, 30]);
+    fail(r.touched ? 'That line touched a pulli.' : 'Wrong kolam. The ants noticed.');
+    if (fails >= 2) hintFrac = Math.min(0.5, 0.15 * fails);
+    if (fails >= 3) ui({ brand: false, clock: true, msg: $('#msg').innerHTML, buttons: [[{ label: 'Forgot? Relearn it', cls: 'soft', fn: () => { candidate = passcode; goto('practice'); } }]] });
+  }
+}
+
+// ---------- p5 ----------
+function setup() {
+  const ph = $('#phone');
+  const c = createCanvas(ph.clientWidth, ph.clientHeight); c.parent(ph);
+  pixelDensity(Math.min(2, window.devicePixelRatio || 1));
+  const el = c.elt;
+  const xy = e => { const r = el.getBoundingClientRect(); return [(e.clientX - r.left) * width / r.width, (e.clientY - r.top) * height / r.height]; };
+  el.addEventListener('pointerdown', e => { if (!interactive || !gridG) return; el.setPointerCapture(e.pointerId); startTrace(...xy(e)); });
+  el.addEventListener('pointermove', e => { if (trace && trace.active) addPoint(...xy(e)); });
+  el.addEventListener('pointerup', () => { if (trace && trace.active) endTrace(); });
+  el.addEventListener('pointercancel', () => { if (trace && trace.active) endTrace(); });
+  new ResizeObserver(() => { if (ph.clientWidth !== width || ph.clientHeight !== height) resizeCanvas(ph.clientWidth, ph.clientHeight); }).observe(ph);
+  $('#sheetClose').onclick = () => { $('#sheet').hidden = true; };
+  passcode = loadPasscode();
+  ensureAnts(); goto(passcode ? 'lock' : 'welcome'); tick(); setInterval(tick, 1000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && passcode && mode === 'home') goto('lock'); });
+  if ('serviceWorker' in navigator && location.protocol === 'https:' && window.__STANDALONE__) navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+function windowResized() { const ph = $('#phone'); resizeCanvas(ph.clientWidth, ph.clientHeight); }
+function tick() {
+  const d = new Date(), hm = d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: false });
+  $('#sbTime').textContent = hm; $('#clock').textContent = hm;
+  $('#date').textContent = d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+function drawLine(pts, w, col, noisy, closed) {
+  const ctx = drawingContext; ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = col;
+  if (!noisy) {
+    ctx.lineWidth = w; ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
+    if (closed) ctx.closePath(); ctx.stroke();
+  } else {
+    const t = millis() * 0.0004, n = pts.length + (closed ? 1 : 0);
+    for (let i = 1; i < n; i++) {
+      const a = pts[i - 1], b = pts[i % pts.length];
+      ctx.lineWidth = w * (0.45 + 1.1 * noise(i * 0.06, t));      // uneven rice‑flour thickness
+      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+function glowDot(x, y, r, a) { const ctx = drawingContext; ctx.save(); ctx.shadowColor = `rgba(255,240,200,${a})`; ctx.shadowBlur = 18; noStroke(); fill(255, 250, 235, 255 * a); circle(x, y, r * 2); ctx.restore(); }
+
+function draw() {
+  const ctx = drawingContext, grad = ctx.createLinearGradient(0, 0, 0, height);
+  grad.addColorStop(0, 'rgb(245,192,85)'); grad.addColorStop(1, 'rgb(133,78,14)');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, width, height);
+  const now = millis();
+  let feedPts = null;
+
+  if (gridG) {
+    const L = layoutFor(gridG), toS = p => G2S(L, gridG, p[0], p[1]);
+    const S = target ? target.samples.map(toS) : null;
+    const lw = Math.max(2.4, L.u * 0.055);
+
+    // ghost lane (teaching), peek, or partial hint on lock
+    let ghostA = opts.ghost ? 1 : 0;
+    if (now < peekUntil) ghostA = Math.max(ghostA, Math.min(1, (peekUntil - now) / 600));
+    if (S && ghostA > 0) {
+      drawLine(S, L.u * 0.32, `rgba(255,245,225,${0.13 * ghostA})`, false, true);
+      drawLine(S, 1.5, `rgba(255,250,240,${0.45 * ghostA})`, false, true);
+    }
+    if (S && hintFrac > 0 && mode === 'lock') drawLine(S.slice(0, Math.floor(S.length * hintFrac)), 1.5, 'rgba(255,250,240,.35)', false, false);
+
+    // finished kolam (preview / success)
+    if (S && (opts.clean || (result && result.ok))) {
+      const f = constrain((now - revealStart) / (opts.clean && mode === 'create' ? 1600 : 900), 0, 1);
+      const part = S.slice(0, Math.max(2, Math.floor(S.length * f)));
+      drawLine(part, lw * 2.6, 'rgba(255,245,220,.18)', false, f >= 1);
+      drawLine(part, lw, 'rgb(255,252,242)', true, f >= 1);
+      feedPts = S;
+    }
+
+    // lamp tracing the path
+    if (S && opts.lamp && !(trace && trace.active)) {
+      const P = Math.max(3.2, target.loop.length * 0.32) * 1000, N = S.length, head = Math.floor(((now % P) / P) * N);
+      for (let i = 30; i >= 0; i--) { const p = S[(head - i + N) % N]; noStroke(); fill(255, 252, 240, 200 * (1 - i / 30)); circle(p[0], p[1], 6 * (1 - i / 34)); }
+      glowDot(S[head][0], S[head][1], 5, 1);
+    }
+
+    // the person's stroke
+    if (trace && trace.pts.length > 1) {
+      let a = 1, col = '255,250,240';
+      if (result && !result.ok) { a = 1 - constrain((now - result.t0) / 1600, 0, 1); col = '255,120,90'; }
+      else if (result && result.ok) a = 1 - constrain((now - result.t0) / 600, 0, 1);
+      else if (trace.off && opts.guide) col = '255,130,100';
+      if (a > 0) drawLine(trace.pts, lw, `rgba(${col},${a})`, true, false); else if (result && !result.ok) trace = null;
+    }
+
+    // guide: ring on the next gate to pass
+    if (opts.guide && trace && trace.active && !trace.off && trace.al.length && target) {
+      const al = trace.al[0], nk = al.d[(al.k + trace.tok.length) % al.d.length], [nx, ny] = toS(parseKey(nk));
+      noFill(); stroke(255, 250, 240, 140 + 100 * Math.sin(now / 160)); strokeWeight(1.5); circle(nx, ny, L.u * 0.5);
+    }
+    if (trace && trace.offPt && opts.guide) { noFill(); stroke(255, 120, 90, 200); strokeWeight(2); circle(trace.offPt[0], trace.offPt[1], 22); }
+
+    // pullis
+    const r = constrain(L.u * 0.075, 3.5, 6);
+    for (const d of dotCache) {
+      const [x, y] = toS(d), hit = trace && trace.touched === key(d[0], d[1]);
+      noStroke(); fill(hit ? color(255, 110, 80) : color(255, 252, 242)); circle(x, y, r * 2);
+      if (hit) { noFill(); stroke(255, 110, 80); strokeWeight(1.5); circle(x, y, r * 5); }
+    }
+  }
+
+  // ants crawl on the welcome, lock and home screens
+  if (mode === 'welcome' || mode === 'lock' || mode === 'home') {
+    for (const a of ants) { a.update(feedPts); a.draw(); }
+    if (mode === 'home' && frameCount % 20 === 0) { const fc = $('#fc'); if (fc) fc.textContent = ants.filter(a => a.eating).length; }
+  }
+}
+</script>
+</body>
+</html>
